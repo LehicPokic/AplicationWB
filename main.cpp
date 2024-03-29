@@ -1,3 +1,6 @@
+/*
+    1. Решить вопрос с числом папок, чтобы числа не уходили в миллиарды
+*/
 #include <QCoreApplication>
 #include <QSqlDatabase>
 #include <QSqlError>
@@ -15,7 +18,8 @@ int main(int argc, char *argv[])
 
     int number_of_folders = 0; //Переменная отвечающая за число папок
 
-    QString hostname = "Demo3";
+    QString hostname = argv[1];
+
     QSqlDatabase sdb;
 
     sdb = QSqlDatabase::addDatabase("QSQLITE");
@@ -26,7 +30,7 @@ int main(int argc, char *argv[])
 
     QSqlTableModel *data = new QSqlTableModel();
 
-    QVector<std::string> device = {"wb_map12e_28", "WB-MSWv.3"};
+    QVector<std::string> device;
 
     QVector<int> int_id;
 
@@ -41,6 +45,20 @@ int main(int argc, char *argv[])
         devices = new QSqlTableModel(nullptr, sdb);
         devices->setTable("channels");
         devices->select();
+        QFile filedevices(argv[3]);
+        if (!filedevices.open(QIODevice::ReadOnly | QIODevice::Text)) {
+                qDebug() << "File devices.txt NOT OPEN!!! " << argv[3] << filedevices.errorString();
+                return 1;
+        }
+        else {
+            QTextStream in(&filedevices);
+            if (!in.atEnd()) {
+                device.push_back(in.readLine().toStdString()); // Читаем первую строку
+            }
+        }
+
+
+
         devices->setFilter("device = 'wb-map12e_28' OR device = 'WB-MSWv.3'"); //Заменить на получение данных из вектора device
         for (int i = 0; i < devices->rowCount(); ++i) {
             QModelIndex index = devices->index(i, 0);
@@ -59,7 +77,7 @@ int main(int argc, char *argv[])
 
         qDebug() << dataCounter;
 
-        QFile fileindex("C:/Files/Project/WirenBoard_monitor/ApplicationCreate/index.txt");
+        QFile fileindex(argv[2]);
         if (!fileindex.open(QIODevice::ReadOnly | QIODevice::Text)) {
                 qDebug() << "File index.txt NOT OPEN!!!" << fileindex.errorString();
                 return 1;
@@ -70,9 +88,9 @@ int main(int argc, char *argv[])
             number_of_folders = firstLine.toInt();
             qDebug() << number_of_folders;
         }
-
+        QString pathtoinput = argv[4];
         while (dataCounter != 0) {
-            QString path = QString("./inputs/input_file_%1").arg(number_of_folders+1);
+            QString path = QString(pathtoinput+"/input_file%1.txt").arg(number_of_folders+1);
             QFile file(path);
             if (!file.open(QIODevice::ReadWrite)) {
                     qDebug() << path << " - ERROR open!" << file.errorString();
@@ -94,7 +112,7 @@ int main(int argc, char *argv[])
             }
         }
         fileindex.close();
-        QFile fileindexnew("C:/Files/Project/WirenBoard_monitor/ApplicationCreate/index.txt");
+        QFile fileindexnew(argv[2]);
         if (!fileindexnew.open(QIODevice::WriteOnly | QIODevice::Text)) {
                 qDebug() << "File index.txt NOT OPEN!!!" << fileindex.errorString();
                 return 1;
@@ -103,7 +121,6 @@ int main(int argc, char *argv[])
             QTextStream out(&fileindexnew);
             out << number_of_folders;
         }
-
     }
-    return a.exec();
+    return 0;
 }
