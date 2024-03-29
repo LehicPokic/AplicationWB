@@ -2,8 +2,13 @@
 
 SetModelFilter::SetModelFilter(QString nameTable, const QVector<int> &ids,  QSqlDatabase db)
 {
-    if (model == nullptr || ids.isEmpty()) {
-        qDebug() << "Модель не инициализирована или список ID пуст";
+    model = new QSqlTableModel(nullptr, db);
+    if (model == nullptr) {
+        qDebug() << "Модель не инициализирована";
+        return;
+    }
+    if (ids.isEmpty()) {
+        qDebug() << "Список ID пуст";
         return;
     }
 
@@ -18,7 +23,6 @@ SetModelFilter::SetModelFilter(QString nameTable, const QVector<int> &ids,  QSql
     QString filter = QString("channel IN (%1) AND timestamp <= %2 AND timestamp >= %3").arg(idListStrings.join(',')).arg(1711358093073).arg(1711358093043); //Поменять на переменные
 
     // Установка фильтра для модели
-    model = new QSqlTableModel(nullptr, db);
     model->setTable(nameTable);
     model->setFilter(filter);
     model->select();
@@ -27,7 +31,7 @@ SetModelFilter::SetModelFilter(QString nameTable, const QVector<int> &ids,  QSql
 
 }
 
-QSqlTableModel* SetModelFilter::getModelFilter()
+QSqlTableModel* SetModelFilter::getModel()
 {
     return model;
 }

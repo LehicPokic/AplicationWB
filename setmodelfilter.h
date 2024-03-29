@@ -14,7 +14,7 @@ class SetModelFilter
 
 public:
     SetModelFilter(QString nameTable,const QVector<int>& ids, QSqlDatabase db);
-    QSqlTableModel* getModelFilter();
+    QSqlTableModel* getModel();
 };
 
 #endif // SETMODELFILTER_H

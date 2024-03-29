@@ -6,7 +6,7 @@
 #include <QSqlTableModel>
 #include <QDir>
 #include "setmodelfilter.h"
-
+#include <QSqlQuery>
 
 
 int main(int argc, char *argv[])
@@ -15,6 +15,7 @@ int main(int argc, char *argv[])
 
     int number_of_folders = 0; //Переменная отвечающая за число папок
 
+    QString hostname = "Demo3";
     QSqlDatabase sdb;
 
     sdb = QSqlDatabase::addDatabase("QSQLITE");
@@ -52,40 +53,57 @@ int main(int argc, char *argv[])
 
         SetModelFilter *filter = new SetModelFilter("data", int_id, sdb);
 
-        data = filter->getModelFilter();
+        data = filter->getModel();
 
         int dataCounter = data->rowCount();
 
         qDebug() << dataCounter;
 
-        QFile file("C:/Files/Project/WirenBoard_monitor/ApplicationCreate/index.txt");
-        if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-                qDebug() << "File index.txt NOT OPEN!!!" << file.errorString();
+        QFile fileindex("C:/Files/Project/WirenBoard_monitor/ApplicationCreate/index.txt");
+        if (!fileindex.open(QIODevice::ReadOnly | QIODevice::Text)) {
+                qDebug() << "File index.txt NOT OPEN!!!" << fileindex.errorString();
                 return 1;
         }
         else {
-            QTextStream in(&file);
+            QTextStream in(&fileindex);
             QString firstLine = in.readLine();
             number_of_folders = firstLine.toInt();
             qDebug() << number_of_folders;
         }
 
         while (dataCounter != 0) {
-            QString path = QString("./input_file_%1").arg(number_of_folders);
+            QString path = QString("./inputs/input_file_%1").arg(number_of_folders+1);
             QFile file(path);
             if (!file.open(QIODevice::ReadWrite)) {
-                    qDebug() << path << " - ERROR open!"; //<< file.errorString();
+                    qDebug() << path << " - ERROR open!" << file.errorString();
                 }
             else {
                 qDebug() << path << " - file is open!";
+                QTextStream out(&file);
+                for (int i = 0; i < 249; i++) {
+                    if (dataCounter != 0) {
+                        QModelIndex indexTime = data->index(i, 3);
+                        QModelIndex indexValue = data->index(i, 2);
+                        QModelIndex indexChannel = data->index(i, 1);
+                        out << hostname << " " <<  data->data(indexChannel).toInt() << " " << data->data(indexTime).toInt() << " " << data->data(indexValue).toDouble() << endl;
+                        dataCounter--;
+                    }
+                }
+                number_of_folders++;
+                file.close();
             }
-            file.close();
-            number_of_folders++;
-            dataCounter--;
+        }
+        fileindex.close();
+        QFile fileindexnew("C:/Files/Project/WirenBoard_monitor/ApplicationCreate/index.txt");
+        if (!fileindexnew.open(QIODevice::WriteOnly | QIODevice::Text)) {
+                qDebug() << "File index.txt NOT OPEN!!!" << fileindex.errorString();
+                return 1;
+        }
+        else {
+            QTextStream out(&fileindexnew);
+            out << number_of_folders;
         }
 
     }
-
-
     return a.exec();
 }
