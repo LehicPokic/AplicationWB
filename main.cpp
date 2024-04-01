@@ -1,5 +1,5 @@
 /*
-    1. Решить вопрос с числом папок, чтобы числа не уходили в миллиарды
+    1. Решить вопрос с числом папок, чтобы числа не уходили в миллиарды (решено)
     2. Решить вопрос со времеными метками
 */
 #include <QCoreApplication>
@@ -13,13 +13,37 @@
 #include <QSqlQuery>
 
 
+int countFilesInDirectory(const QString &path) {  //Подсчет числа файлов в папке
+    QDir dir(path);
+    int count = 0;
+
+    // Устанавливаем фильтр для поиска всех файлов и директорий, исключая специальные папки "." и ".."
+    dir.setFilter(QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot);
+
+    // Получаем список всех файлов и папок
+    QFileInfoList list = dir.entryInfoList();
+
+    for (int i = 0; i < list.size(); ++i) {
+        QFileInfo fileInfo = list.at(i);
+        if (fileInfo.isDir()) {
+            // Если это директория, рекурсивно вызываем функцию
+            count += countFilesInDirectory(fileInfo.absoluteFilePath());
+        } else {
+            // Если это файл, увеличиваем счетчик
+            ++count;
+        }
+    }
+
+    return count;
+}
+
 int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
 
     int number_of_folders = 0; //Переменная отвечающая за число папок
 
-    QString hostname = argv[1];
+    QString hostname = "Demo3";
 
     QSqlDatabase sdb;
 
@@ -46,9 +70,9 @@ int main(int argc, char *argv[])
         devices = new QSqlTableModel(nullptr, sdb);
         devices->setTable("channels");
         devices->select();
-        QFile filedevices(argv[3]);
+        QFile filedevices("C:/Files/Project/WirenBoard_monitor/ApplicationCreate/release/release/files/devices.txt"); //Заполнение вектора devices
         if (!filedevices.open(QIODevice::ReadOnly | QIODevice::Text)) {
-                qDebug() << "File devices.txt NOT OPEN!!! " << argv[3] << filedevices.errorString();
+                qDebug() << "File devices.txt NOT OPEN!!! " /*<< argv[3] */ << filedevices.errorString();
                 return 1;
         }
         else {
@@ -78,23 +102,14 @@ int main(int argc, char *argv[])
 
         qDebug() << dataCounter;
 
-        QFile fileindex(argv[2]);
-        if (!fileindex.open(QIODevice::ReadOnly | QIODevice::Text)) {
-                qDebug() << "File index.txt NOT OPEN!!!" << fileindex.errorString();
-                return 1;
-        }
-        else {
-            QTextStream in(&fileindex);
-            QString firstLine = in.readLine();
-            number_of_folders = firstLine.toInt();
-            qDebug() << number_of_folders;
-        }
-        QString pathtoinput = argv[4];
+        number_of_folders = countFilesInDirectory("C:/Files/Project/WirenBoard_monitor/ApplicationCreate/release/release/files/input");
+        QString pathtoinput = "C:/Files/Project/WirenBoard_monitor/ApplicationCreate/release/release/files/input";
         while (dataCounter != 0) {
             QString path = QString(pathtoinput+"/input_file%1.txt").arg(number_of_folders+1);
             QFile file(path);
             if (!file.open(QIODevice::ReadWrite)) {
                     qDebug() << path << " - ERROR open!" << file.errorString();
+                    return 1;
                 }
             else {
                 qDebug() << path << " - file is open!";
@@ -104,23 +119,18 @@ int main(int argc, char *argv[])
                         QModelIndex indexTime = data->index(i, 3);
                         QModelIndex indexValue = data->index(i, 2);
                         QModelIndex indexChannel = data->index(i, 1);
-                        out << hostname << " " <<  data->data(indexChannel).toInt() << " " << data->data(indexTime).toInt() << " " << data->data(indexValue).toDouble() << endl;
+                        QSqlQuery query;
+                        QString q = QString("SELECT control FROM channels JOIN data ON data.channel = channels.int_id WHERE data.channel = '%1'").arg(data->data(indexChannel).toInt());
+                        query.exec(q);
+                        query.first();
+                        QString control = query.value(0).toString();
+                        out << hostname << " " << control.replace(" ", "_") << " " << data->data(indexTime).toInt() << " " << data->data(indexValue).toDouble() << endl;
                         dataCounter--;
                     }
                 }
                 number_of_folders++;
                 file.close();
             }
-        }
-        fileindex.close();
-        QFile fileindexnew(argv[2]);
-        if (!fileindexnew.open(QIODevice::WriteOnly | QIODevice::Text)) {
-                qDebug() << "File index.txt NOT OPEN!!!" << fileindex.errorString();
-                return 1;
-        }
-        else {
-            QTextStream out(&fileindexnew);
-            out << number_of_folders;
         }
     }
     return 0;
