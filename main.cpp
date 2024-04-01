@@ -61,11 +61,11 @@ int main(int argc, char *argv[])
 
         devices->setFilter("device = 'wb-map12e_28' OR device = 'WB-MSWv.3'"); //Заменить на получение данных из вектора device
         for (int i = 0; i < devices->rowCount(); ++i) {
-            QModelIndex index = devices->index(i, 0);
-            QModelIndex index2 = devices->index(i, 2);
-            int_id.push_back(devices->data(index).toInt());
-            control.push_back(devices->data(index2).toString());
-            qDebug() << devices->data(index).toInt() << " " << devices->data(index2).toString();
+            QModelIndex indexInt_id = devices->index(i, 0);
+            QModelIndex indexControl = devices->index(i, 2);
+            int_id.push_back(devices->data(indexInt_id).toInt());
+            control.push_back(devices->data(indexControl).toString());
+            qDebug() << devices->data(indexInt_id).toInt() << " " << devices->data(indexControl).toString();
             //qDebug() << devices->data(index2).toString();
         }
 

@@ -24,8 +24,9 @@ SetModelFilter::SetModelFilter(QString nameTable, const QVector<int> &ids,  QSql
 
     // Установка фильтра для модели
     model->setTable(nameTable);
-    model->setFilter(filter);
     model->select();
+    model->setFilter(filter);
+
 
     qDebug() << "Filter is select:" << filter;
 
