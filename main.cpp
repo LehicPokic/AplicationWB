@@ -1,9 +1,10 @@
 
 /*
-    //Добавить отбор из файла device.txt
+    //Придумать как решать вопрос с несколькими одинаковыми счетчиками
 
 
 */
+#include <QRegularExpression>
 #include <QCoreApplication>
 #include <QSqlDatabase>
 #include <QSqlError>
@@ -37,6 +38,18 @@ int countFilesInDirectory(const QString &path) {  //Подсчет числа ф
     }
 
     return count;
+}
+
+
+QString extractLastNumber(const QString &str) {   //Берет последнее число в строке          //Написана с помощью ChatGPT
+    QRegularExpression re("(\\d+)(?!.*\\d)"); // Регулярное выражение для извлечения последнего числа
+    QRegularExpressionMatch match = re.match(str);
+
+    if (match.hasMatch()) {
+        return match.captured(1); // Преобразуем найденное число в int и возвращаем его
+    } else {
+        return QString(); // Возвращаем -1, если число не найдено
+    }
 }
 
 int main(int argc, char *argv[])
@@ -135,11 +148,23 @@ int main(int argc, char *argv[])
                             QModelIndex indexValue = data->index(i, 2);
                             QModelIndex indexChannel = data->index(i, 1);
                             QSqlQuery query;
-                            QString q = QString("SELECT control FROM channels JOIN data ON data.channel = channels.int_id WHERE data.channel = '%1'").arg(data->data(indexChannel).toInt());
-                            query.exec(q);
+                            QString channelName = QString("SELECT control FROM channels JOIN data ON data.channel = channels.int_id WHERE data.channel = '%1'").arg(data->data(indexChannel).toInt()); // Запрос к SQL чтобы получить название канала по его id
+                            query.exec(channelName);
                             query.first();
                             QString control = query.value(0).toString();
-                            out << hostname << " " << control.replace(" ", "_") << " " << data->data(indexTime).toString() << " " << data->data(indexValue).toDouble() << endl;
+                            QSqlQuery query2;
+                            QString deviceName = QString("SELECT device FROM channels WHERE channels.int_id = '%1'").arg(data->data(indexChannel).toInt()); //Получаем название девайса из SQL по id канала
+                            query2.exec(deviceName);
+                            query2.first();
+                            QString devName = query2.value(0).toString();
+
+                            // Обработаем строку и возьмем только его модбас адрес
+
+                            QString modbus_adress = extractLastNumber(devName);
+
+                            QString key = (control.replace(" ", "_")) + "_" + modbus_adress;
+
+                            out << hostname << " " << key << " " << data->data(indexTime).toString() << " " << data->data(indexValue).toDouble() << endl;
                             dataCounter--;
                         }
                     }
