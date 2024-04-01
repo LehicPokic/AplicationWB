@@ -124,7 +124,7 @@ int main(int argc, char *argv[])
                         query.exec(q);
                         query.first();
                         QString control = query.value(0).toString();
-                        out << hostname << " " << control.replace(" ", "_") << " " << data->data(indexTime).toInt() << " " << data->data(indexValue).toDouble() << endl;
+                        out << hostname << " " << control.replace(" ", "_") << " " << data->data(indexTime).toString() << " " << data->data(indexValue).toDouble() << endl;
                         dataCounter--;
                     }
                 }
