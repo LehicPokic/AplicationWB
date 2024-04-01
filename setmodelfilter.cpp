@@ -20,12 +20,13 @@ SetModelFilter::SetModelFilter(QString nameTable, const QVector<int> &ids,  QSql
     for (int id : ids) {
        idListStrings << QString::number(id);
     }
-    QString filter = QString("channel IN (%1) AND timestamp <= %2 AND timestamp >= %3").arg(idListStrings.join(',')).arg(1711248412476).arg(1711248412446); //Поменять на переменные
+    QString filter = QString("channel IN (%1) AND (timestamp <= %2 AND timestamp >= %3)").arg(idListStrings.join(',')).arg(1711248412476).arg(1711248412446); //Поменять на переменные
 
     // Установка фильтра для модели
+    model->clear();
     model->setTable(nameTable);
-    model->select();
     model->setFilter(filter);
+    model->select();
 
 
     qDebug() << "Filter is select:" << filter;

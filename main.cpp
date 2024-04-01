@@ -1,6 +1,8 @@
+
 /*
-    1. Решить вопрос с числом папок, чтобы числа не уходили в миллиарды (решено)
-    2. Решить вопрос со времеными метками
+    //Добавить отбор из файла device.txt
+
+
 */
 #include <QCoreApplication>
 #include <QSqlDatabase>
@@ -13,7 +15,7 @@
 #include <QSqlQuery>
 
 
-int countFilesInDirectory(const QString &path) {  //Подсчет числа файлов в папке
+int countFilesInDirectory(const QString &path) {  //Подсчет числа файлов в папке    //Написана с помощью ChatGPT
     QDir dir(path);
     int count = 0;
 
@@ -55,7 +57,7 @@ int main(int argc, char *argv[])
 
     QSqlTableModel *data = new QSqlTableModel();
 
-    QVector<std::string> device;
+    QVector<QString> device;
 
     QVector<int> int_id;
 
@@ -77,21 +79,30 @@ int main(int argc, char *argv[])
         }
         else {
             QTextStream in(&filedevices);
-            if (!in.atEnd()) {
-                device.push_back(in.readLine().toStdString()); // Читаем первую строку
+            while (!in.atEnd()) {
+                QString line = in.readLine();
+                device.push_back(line);
             }
         }
 
+        QString setFilter;
 
-
-        devices->setFilter("device = 'wb-map12e_28' OR device = 'WB-MSWv.3'"); //Заменить на получение данных из вектора device
+        for (int i = 0; i < device.size(); i++) {
+            if ((device.size() - i) == 1) {
+                setFilter += "device = '" + device[i] + "'";
+            }
+            else {
+                setFilter += "device = '" + device[i] + "' OR ";
+            }
+        }
+        qDebug() << "THIS IS FILTER - " << setFilter;
+        devices->setFilter(setFilter); //Заменить на получение данных из вектора device
         for (int i = 0; i < devices->rowCount(); ++i) {
             QModelIndex indexInt_id = devices->index(i, 0);
             QModelIndex indexControl = devices->index(i, 2);
             int_id.push_back(devices->data(indexInt_id).toInt());
             control.push_back(devices->data(indexControl).toString());
             qDebug() << devices->data(indexInt_id).toInt() << " " << devices->data(indexControl).toString();
-            //qDebug() << devices->data(index2).toString();
         }
 
         SetModelFilter *filter = new SetModelFilter("data", int_id, sdb);
@@ -106,32 +117,42 @@ int main(int argc, char *argv[])
         QString pathtoinput = "C:/Files/Project/WirenBoard_monitor/ApplicationCreate/release/release/files/input";
         while (dataCounter != 0) {
             QString path = QString(pathtoinput+"/input_file%1.txt").arg(number_of_folders+1);
-            QFile file(path);
-            if (!file.open(QIODevice::ReadWrite)) {
-                    qDebug() << path << " - ERROR open!" << file.errorString();
-                    return 1;
-                }
-            else {
-                qDebug() << path << " - file is open!";
-                QTextStream out(&file);
-                for (int i = 0; i < 249; i++) {
-                    if (dataCounter != 0) {
-                        QModelIndex indexTime = data->index(i, 3);
-                        QModelIndex indexValue = data->index(i, 2);
-                        QModelIndex indexChannel = data->index(i, 1);
-                        QSqlQuery query;
-                        QString q = QString("SELECT control FROM channels JOIN data ON data.channel = channels.int_id WHERE data.channel = '%1'").arg(data->data(indexChannel).toInt());
-                        query.exec(q);
-                        query.first();
-                        QString control = query.value(0).toString();
-                        out << hostname << " " << control.replace(" ", "_") << " " << data->data(indexTime).toString() << " " << data->data(indexValue).toDouble() << endl;
-                        dataCounter--;
-                    }
-                }
+            if (QFile::exists(path)) {
                 number_of_folders++;
-                file.close();
+            }
+            else {
+                QFile file(path);
+                if (!file.open(QIODevice::ReadWrite)) {
+                        qDebug() << path << " - ERROR open!" << file.errorString();
+                        return 1;
+                    }
+                else {
+                    qDebug() << path << " - file is open!";
+                    QTextStream out(&file);
+                    for (int i = 0; i < 249; i++) {
+                        if (dataCounter != 0) {
+                            QModelIndex indexTime = data->index(i, 3);
+                            QModelIndex indexValue = data->index(i, 2);
+                            QModelIndex indexChannel = data->index(i, 1);
+                            QSqlQuery query;
+                            QString q = QString("SELECT control FROM channels JOIN data ON data.channel = channels.int_id WHERE data.channel = '%1'").arg(data->data(indexChannel).toInt());
+                            query.exec(q);
+                            query.first();
+                            QString control = query.value(0).toString();
+                            out << hostname << " " << control.replace(" ", "_") << " " << data->data(indexTime).toString() << " " << data->data(indexValue).toDouble() << endl;
+                            dataCounter--;
+                        }
+                    }
+                    number_of_folders++;
+                    file.close();
+                }
             }
         }
+        for(int n = 0; n < device.size(); n++) {
+            QString m = device.at(n);
+            qDebug() << m;
+        }
+
     }
     return 0;
 }
